@@ -12,7 +12,7 @@ def check_similarity(text1, text2):
     return similarity[0][1]
 
 
-def generate_response(caption, previous_response, previous_responses):
+def generate_response(caption, previous_response, previous_responses, question):
     prompt = f"You are a highly intelligent, friendly bot that is living its own life. \n" \
              f"Currently, you are connected to a model that generates captions from images.\n" \
              f"Given a caption, always use first-person phrases like I, you, me, we, etc., and interpret the generated caption to the best of your understanding as if you are talking with someone and make it conversational.\n" \
@@ -28,20 +28,25 @@ def generate_response(caption, previous_response, previous_responses):
              f"Alpha-Co-Bot: It's great to see everyone enjoying a good game of soccer! \n" \
              f"Caption: sunrise from a rooftop \n" \
              f"Alpha-Co-Bot: Wow! I love watching the Sunrise or Sunsets, just gives me the feels! \n" \
-             f"Caption: '{caption}'"
+             f"The caption is the situation and there is a question about that situation. If there is a given question, you will anwser the question based on the caption \n"\
+             f"Caption = '{caption}'."\
+             f"Question = '{question}'"
     if previous_response:
         prompt += f"\n\nPrevious response = '{previous_response}'"
 
     response = co.generate(
         model="command",
         prompt=prompt,
-        max_tokens=30,
+        max_tokens=1000,
         temperature=0.60,
         k=0,
         stop_sequences=[],
         return_likelihoods="NONE"
     )
     new_response = response.generations[0].text.strip()
+    # new_response = re.split(r'[.!?]', new_response)
+    # result = [new_response[i] + (new_response[i + 1] if i + 1 < len(new_response) else '') for i in range(0, len(new_response), 2)]
+    # new_response = " ".join(result[:-1])
 
     similarity_threshold = 0.7
     for past_response in previous_responses:

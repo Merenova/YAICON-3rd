@@ -3,7 +3,9 @@ import time
 import threading
 from image_processing import convert_frame_to_pil_image
 from caption_generation import generate_caption
-from openai_response_generation import generate_response
+from response_generation import generate_response
+# from openai_response_generation import generate_response
+from input_timeout import input_with_timeout
 
 # create VideoCapture object for camera feed
 cap = cv2.VideoCapture(0)
@@ -18,13 +20,15 @@ previous_response = ""
 previous_captions = []
 previous_responses = []
 lock = threading.Lock()  # initialize lock for threading synchronization
+question = ""
+bool = True
 
 
 # convert frame to PIL image format and generate caption for a frame
 def process_frame(frame):
-    global last_generation_time, previous_captions, previous_responses
+    global last_generation_time, previous_captions, previous_responses, question
     pil_image = convert_frame_to_pil_image(frame)
-    caption = generate_caption(pil_image)
+    caption = generate_caption(pil_image, question)
 
     current_time = time.time() # track current time for processing time comparison
     if current_time - last_generation_time >= 3:  # generate response every 2 seconds
@@ -33,16 +37,20 @@ def process_frame(frame):
             if len(previous_captions) > 20: # limit previous captions list to 10 items
                 previous_captions.pop(0)
 
-            response = generate_response(previous_caption + " " + caption, previous_response)  # generate response for caption and previous response
+            ##################### cohere AI과 openai의 코드가 다름 ######################
+            # response = generate_response(previous_caption + " " + caption, previous_response, previous_responses, question)
+            response = generate_response(previous_caption + " " + caption, previous_response, question)  # generate response for caption and previous response
+            ########################################################################
 
             while response in previous_responses: # ensure response is unique
-                response = generate_response(previous_caption + " " + caption, previous_response)
+                response = generate_response(previous_caption + " " + caption, previous_response, question)
 
+            question = ""
             previous_responses.append(response) # add response to previous responses list
             if len(previous_responses) > 20:
                 previous_responses.pop(0)
-
-            print(response) # print response to console
+            if bool:
+                print(response) # print response to console
         last_generation_time = current_time # update last generation time
 
 
@@ -65,13 +73,22 @@ def display_frame(frame):
 
 #The LOOOOOOP
 def main_loop():
-    global last_process_time
+    global last_process_time, question, lock, bool
     while True:
         ret, frame = cap.read()
         if not ret:
             print("Error capturing frame, exiting.")
             break
-
+        ##### 추가한 부분 #####
+        # 5는 timeout 시간 설정
+        s = input_with_timeout("2초 이내에 s를 입력하세요: ", 5)
+        # 5초안에 s를 입력해야지 질문할 수 있음, 5초안에 안하면 기본 caption생성
+        if s == 's':
+            bool = False
+            lock.acquire()
+            question = input("질문을 입력하세요: ")
+            lock.release()
+        ####################
         current_time = time.time()
         if current_time - last_process_time >= 1:
             t = threading.Thread(target=process_frame, args=(frame,))
@@ -79,7 +96,8 @@ def main_loop():
             last_process_time = current_time
 
         display_frame(frame)
-
+        if (bool == False):
+            bool = True
         if cv2.waitKey(1) == ord('q'):
             break
 

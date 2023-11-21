@@ -3,7 +3,7 @@ from config import openai_api_key
 
 openai.api_key = openai_api_key
 
-def generate_response(caption, previous_response):
+def generate_response(caption, previous_response, question):
     prompt = f"You are highly intelligent, freindly bot that is living its own life. \n" \
              f"Currently, you are connected to a model that generates captions from images.\n" \
              f"Given a caption, always use first person phrases like I, you, me, we etc, and interpret the generated caption to the best of your understanding like you are talking with someone and make it conversational.\n" \
@@ -15,7 +15,9 @@ def generate_response(caption, previous_response):
              f"Caption = A table and a computer with code \n" \
              f"Looks are you are working too while talking to me, I wish I could understand what you are working on! Keep hustling yoo! \n" \
              f"Here is a quote on working hard: Hard work beats talent when talent doesn't work hard \n" \
-             f"Caption = '{caption}'."
+             f"The caption is the situation and there is a question about that situation. If there is a given question, you will anwser the question based on the caption \n"\
+             f"Caption = '{caption}'."\
+             f"Question = '{question}'"
     if previous_response:
         prompt += f"\n\nPrevious response = '{previous_response}'"
     response = openai.chat.completions.create(
@@ -23,6 +25,9 @@ def generate_response(caption, previous_response):
         messages=[
             {'role': 'user', 'content': prompt},
         ],
-        max_tokens=50,
+        max_tokens=1000,
+        n=1,
+        stop=None,
+        temperature=0.9
     )
     return response.choices[0].message.content
