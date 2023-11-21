@@ -4,7 +4,7 @@ import threading
 from image_processing import convert_frame_to_pil_image
 from caption_generation import generate_caption
 from response_generation import generate_response
-# from openai_response_generation import generate_response
+# from openai_response_generation import generate_response, generate_response_vqa
 from input_timeout import input_with_timeout
 
 # create VideoCapture object for camera feed
@@ -32,7 +32,7 @@ def process_frame(frame):
 
     current_time = time.time() # track current time for processing time comparison
     if len(question) > 0:
-        response = generate_response(caption, question)
+        response = generate_response_vqa(caption, question)
         if bool:
             print(response)
         last_generation_time = current_time # update last generation time
