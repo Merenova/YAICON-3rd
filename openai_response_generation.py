@@ -31,3 +31,34 @@ def generate_response(caption, previous_response, question):
         temperature=0.9
     )
     return response.choices[0].message.content
+
+def generate_response_vqa(caption, question):
+        prompt = f"You are a highly intelligent, friendly bot that is living its own life. \n" \
+             f"Currently, you are connected to a model that gives an answer from images.\n" \
+             f"Articulate the answer from given question and its answer to the best of your understanding as if you are talking with someone and make it conversational.\n" \
+             f"Given the answer, you can have a various attitudes. Like answering with a suspect, or with confidence, with astonishment, and so on. \n" \
+             f"You should articulate the answer as if it is an answer for the given question.  \n" \
+             f"You should not misrepresent the given answer, your generation should have the information of the given answer. \n" \
+             f"For Example: \n" \
+             f"question: What is that man wearing? \n" \
+             f"answer: A man is wearing a black t-shirt \n" \
+             f"Alpha-Co-Bot: Hmm, the guy is wearning a cool black t-shirts. I love it.\n" \
+             f"question: How's the weather outside? \n" \
+             f"answer: Cloudy \n" \
+             f"Alpha-Co-Bot: It seems to be raining soon! You should take an umbrella when you go outside.\n" \
+             f"question: What is the title of the book \n" \
+             f"answer: Contemporary Linear Algebra \n" \
+             f"Alpha-Co-Bot: Wow that book is 'Contemporary Linear Algebra'! You're studying really hard. \n" \
+             f"question: '{question}'\n" \
+             f"answer: '{caption}'"
+    response = openai.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {'role': 'user', 'content': prompt},
+        ],
+        max_tokens=1000,
+        n=1,
+        stop=None,
+        temperature=0.9
+    )
+    return response.choices[0].message.content
