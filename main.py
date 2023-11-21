@@ -31,7 +31,12 @@ def process_frame(frame):
     caption = generate_caption(pil_image, question)
 
     current_time = time.time() # track current time for processing time comparison
-    if current_time - last_generation_time >= 3:  # generate response every 2 seconds
+    if len(question) > 0:
+        response = generate_response(caption, question)
+        if bool:
+            print(response)
+        last_generation_time = current_time # update last generation time
+    elif current_time - last_generation_time >= 3:  # generate response every 2 seconds
         if caption and caption not in previous_captions:
             previous_captions.append(caption) # add caption to previous captions list
             if len(previous_captions) > 20: # limit previous captions list to 10 items
@@ -52,6 +57,7 @@ def process_frame(frame):
             if bool:
                 print(response) # print response to console
         last_generation_time = current_time # update last generation time
+        
 
 
 def display_frame(frame):
