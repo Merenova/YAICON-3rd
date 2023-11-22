@@ -1,11 +1,14 @@
 import cv2
+from PIL import Image
 import time
 import threading
-from image_processing import convert_frame_to_pil_image
+import msvcrt
 from caption_generation import generate_caption
-from response_generation import generate_response
+from input_timeout import InputWithTimeout
+from openai_response_generation import generate_response
 # from openai_response_generation import generate_response
-from input_timeout import input_with_timeout
+from image_processing import convert_frame_to_pil_image
+
 
 # create VideoCapture object for camera feed
 cap = cv2.VideoCapture(0)
@@ -22,6 +25,9 @@ previous_responses = []
 lock = threading.Lock()  # initialize lock for threading synchronization
 question = ""
 bool = True
+question_time = time.time()
+timeout_flag = False
+s = ""
 
 
 # convert frame to PIL image format and generate caption for a frame
@@ -71,9 +77,38 @@ def display_frame(frame):
         flipped_frame = cv2.flip(frame, 1) # Flip the frame horizontally
         cv2.imshow('frame', flipped_frame)
 
+def input_thread(prompt, timeout):
+    global s
+    print(prompt, end='', flush=True)
+    timer = threading.Timer(timeout, timeout_handler)
+    timer.start()
+    try:
+        s = input()
+    except EOFError:
+        pass
+    finally:
+        timer.cancel()
+    
+def timeout_handler():
+    global timeout_flag
+    timeout_flag = True
+
+def input_with_timeout(prompt, timeout):
+    """
+    Function to get user input with a timeout.
+    """
+    global timeout_flag
+    input_thread1 = threading.Thread(target=input_thread, args=(prompt, timeout))
+    input_thread1.start()
+    
+    if timeout_flag:
+        return None
+    else:
+        return s
+
 #The LOOOOOOP
 def main_loop():
-    global last_process_time, question, lock, bool
+    global last_process_time, question, lock, bool, question_time, s
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -81,20 +116,23 @@ def main_loop():
             break
         ##### 추가한 부분 #####
         # 5는 timeout 시간 설정
-        s = input_with_timeout("2초 이내에 s를 입력하세요: ", 5)
+        if time.time() - question_time >= 5:
+            s = input_with_timeout("2초 이내에 s를 입력하세요: ", 5)
+            question_time = time.time()
         # 5초안에 s를 입력해야지 질문할 수 있음, 5초안에 안하면 기본 caption생성
         if s == 's':
             bool = False
             lock.acquire()
             question = input("질문을 입력하세요: ")
+            question_time = time.time()
             lock.release()
+            s = ""
         ####################
         current_time = time.time()
         if current_time - last_process_time >= 1:
             t = threading.Thread(target=process_frame, args=(frame,))
             t.start()
             last_process_time = current_time
-
         display_frame(frame)
         if (bool == False):
             bool = True

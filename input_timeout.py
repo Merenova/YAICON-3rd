@@ -1,18 +1,31 @@
-import signal
+import msvcrt
+import threading
 
-def input_with_timeout(prompt, timeout):
-    print(prompt, end='', flush=True)
+class InputWithTimeout:
+    def __init__(self):
+        self.user_input = None
+        self.timeout_flag = False
 
-    # 시그널 핸들러 설정
-    def timeout_handler(signum, frame):
-        raise TimeoutError
+    def input_thread(self, prompt, timeout):
+        print(prompt, end='', flush=True)
+        timer = threading.Timer(timeout, self.timeout_handler)
+        timer.start()
+        try:
+            self.user_input = input()
+        except EOFError:
+            pass  # Ignore EOFError (e.g., when user presses Ctrl+D)
+        finally:
+            timer.cancel()  # Cancel the timer if input is received before the timeout
 
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(timeout)  # 타임아웃 시간 설정
+    def timeout_handler(self):
+        self.timeout_flag = True
 
-    try:
-        user_input = input()
-        signal.alarm(0)  # 타임아웃 시간 해제
-        return user_input
-    except TimeoutError:
-        return None
+    def input_with_timeout(self, prompt, timeout):
+        input_thread = threading.Thread(target=self.input_thread, args=(prompt, timeout))
+        input_thread.start()
+        input_thread.join()
+
+        if self.timeout_flag:
+            return None
+        else:
+            return self.user_input

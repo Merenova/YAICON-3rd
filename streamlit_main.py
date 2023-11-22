@@ -5,9 +5,11 @@ from image_processing import convert_frame_to_pil_image
 from caption_generation import generate_caption
 from response_generation import generate_response
 # from openai_response_generation import generate_response
-from input_timeout import input_with_timeout
+from input_timeout import InputWithTimeout
 
 import streamlit as st
+
+inputwithtimeout = InputWithTimeout()
 
 st.set_page_config(
     page_title = "YAICON",
@@ -99,7 +101,7 @@ while True:
         break
     ##### 추가한 부분 #####
     # 5는 timeout 시간 설정
-    s = input_with_timeout("2초 이내에 s를 입력하세요: ", 5)
+    s = inputwithtimeout.input_with_timeout("2초 이내에 s를 입력하세요: ", 5)
     # 5초안에 s를 입력해야지 질문할 수 있음, 5초안에 안하면 기본 caption생성
     if s == 's':
         bool = False
