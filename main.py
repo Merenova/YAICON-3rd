@@ -110,6 +110,7 @@ def input_with_timeout(prompt, timeout):
 def main_loop():
     global last_process_time, question, lock, bool, question_time, s
     while True:
+        question_flag = False
         ret, frame = cap.read()
         if not ret:
             print("Error capturing frame, exiting.")
@@ -127,12 +128,15 @@ def main_loop():
             question_time = time.time()
             lock.release()
             s = ""
+            question_flag = True
         ####################
         current_time = time.time()
-        if current_time - last_process_time >= 1:
+        if current_time - last_process_time >= 1 and question_flag == False:
             t = threading.Thread(target=process_frame, args=(frame,))
             t.start()
             last_process_time = current_time
+        elif question_flag == True:
+            process_frame(frame)
         display_frame(frame)
         if (bool == False):
             bool = True
