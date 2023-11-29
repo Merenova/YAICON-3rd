@@ -20,10 +20,11 @@ def generate_response(caption, previous_response, question):
              f"Question = '{question}'"
     if previous_response:
         prompt += f"\n\nPrevious response = '{previous_response}'"
+        
     response = openai.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
-            {'role': 'user', 'content': prompt},
+            {'role': 'user', 'content': prompt}
         ],
         max_tokens=1000,
         n=1,

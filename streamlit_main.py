@@ -3,9 +3,9 @@ import time
 import threading
 from image_processing import convert_frame_to_pil_image
 from caption_generation import generate_caption
-from response_generation import generate_response
-# from openai_response_generation import generate_response
-from input_timeout import input_with_timeout
+# from response_generation import generate_response
+from openai_response_generation import generate_response
+# from input_timeout import input_with_timeout
 
 import streamlit as st
 
@@ -88,6 +88,25 @@ def display_frame(frame):
         cv2.imshow('frame', frame)
         flipped_frame = cv2.flip(frame, 1) # Flip the frame horizontally
         cv2.imshow('frame', flipped_frame)
+
+def input_with_timeout(prompt, timeout):
+    print(prompt, end='', flush=True)
+
+    # 시그널 핸들러 설정
+    def timeout_handler():
+        raise TimeoutError
+
+     # Start the timer
+    timer = threading.Timer(timeout, timeout_handler)
+    timer.start()
+
+    try:
+        user_input = input()
+    finally:
+        # Cancel the timer in case user_input is received before the timeout
+        timer.cancel()
+
+    return user_input
 
 col1, col2 = st.columns(2)
 

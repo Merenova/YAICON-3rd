@@ -1,10 +1,10 @@
 import cv2
 import time
 import threading
+import signal
 from image_processing import convert_frame_to_pil_image
 from caption_generation import generate_caption
-from response_generation import generate_response
-# from openai_response_generation import generate_response
+from openai_response_generation import generate_response
 from input_timeout import input_with_timeout
 
 # create VideoCapture object for camera feed
@@ -23,7 +23,6 @@ lock = threading.Lock()  # initialize lock for threading synchronization
 question = ""
 bool = True
 
-
 # convert frame to PIL image format and generate caption for a frame
 def process_frame(frame):
     global last_generation_time, previous_captions, previous_responses, question
@@ -37,14 +36,10 @@ def process_frame(frame):
             if len(previous_captions) > 20: # limit previous captions list to 10 items
                 previous_captions.pop(0)
 
-            ##################### cohere AI과 openai의 코드가 다름 ######################
-            # response = generate_response(previous_caption + " " + caption, previous_response, previous_responses, question)
             response = generate_response(previous_caption + " " + caption, previous_response, question)  # generate response for caption and previous response
-            ########################################################################
 
             while response in previous_responses: # ensure response is unique
-                response = generate_response(previous_caption + " " + caption, previous_response, question)
-
+                response = generate_response(previous_caption + " " + caption, previous_response)
             question = ""
             previous_responses.append(response) # add response to previous responses list
             if len(previous_responses) > 20:
@@ -74,21 +69,17 @@ def display_frame(frame):
 #The LOOOOOOP
 def main_loop():
     global last_process_time, question, lock, bool
-    while True:
+    while bool:
         ret, frame = cap.read()
         if not ret:
             print("Error capturing frame, exiting.")
             break
-        ##### 추가한 부분 #####
-        # 5는 timeout 시간 설정
-        s = input_with_timeout("2초 이내에 s를 입력하세요: ", 5)
-        # 5초안에 s를 입력해야지 질문할 수 있음, 5초안에 안하면 기본 caption생성
+        s = input_with_timeout("", 2)
         if s == 's':
             bool = False
             lock.acquire()
             question = input("질문을 입력하세요: ")
             lock.release()
-        ####################
         current_time = time.time()
         if current_time - last_process_time >= 1:
             t = threading.Thread(target=process_frame, args=(frame,))
